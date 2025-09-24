@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import User
+from django.contrib.auth.hashers import make_password, check_password
 
 
 @api_view(["POST"])
@@ -39,21 +40,26 @@ def RegisterUserData(request):
     if (User.objects.filter(email=email).exists()):
         return Response({"success": False, "error": "this email is already used"}, status=400)
 
+    hashedPassword = make_password(
+        password=password, salt=None, hasher="default")
     user = User.objects.create(
-        name=name, surname=surname, email=email, password=password)
+        name=name, surname=surname, email=email, password=hashedPassword)
 
-    user.save()
     return Response({"success": True}, status=200)
 
 
 @api_view(['POST'])
 def LogInData(request):
+    user = User.objects.filter(email=email).first()
+
     email = request.data.get('email')
     password = request.data.get('password')
+    is_valid = check_password(
+        password=password, encoded=user.password)
 
-    user = User.objects.filter(email=email).first()
     if not user:
         return Response({"logged": False, "message": "User doesn't exist"})
-    if user.password != password:
+    if not is_valid:
         return Response({"logged": False, "message": "Wrong password"})
+
     return Response({"logged": True, "message": "Logged In"})
