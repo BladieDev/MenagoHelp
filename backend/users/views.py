@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import User
 from django.contrib.auth.hashers import make_password, check_password
+from random import randint
+from django.core.mail import send_mail
 
 
 @api_view(["POST"])
@@ -50,16 +52,26 @@ def RegisterUserData(request):
 
 @api_view(['POST'])
 def LogInData(request):
-    user = User.objects.filter(email=email).first()
-
     email = request.data.get('email')
     password = request.data.get('password')
+    user = User.objects.filter(email=email).first()
+    user_code = randint(100000, 999999)
+    str_code = str(user_code)
+
     is_valid = check_password(
         password=password, encoded=user.password)
 
     if not user:
-        return Response({"logged": False, "message": "User doesn't exist"})
+        return Response({"logged": False, "error": "User doesn't exist"}, status=400)
     if not is_valid:
-        return Response({"logged": False, "message": "Wrong password"})
+        return Response({"logged": False, "error": "Wrong password"}, status=400)
 
-    return Response({"logged": True, "message": "Logged In"})
+    send_mail(
+        "Your code",
+        "Here is your code to log in to MenagoHelp" + " " + str_code,
+        "admin@menagohelp.com",
+        [user.email],
+        fail_silently=False
+    )
+
+    return Response({"logged": True, "message": "Logged In", "email": True})

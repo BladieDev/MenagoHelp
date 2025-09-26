@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState();
   const [message, setMessage] = useState("");
   const [loading, isLoading] = useState(false);
   const navigate = useNavigate();
@@ -27,18 +28,23 @@ function LoginForm() {
           password,
         }),
       });
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(`${data.error || "unknown error"}`);
+        const errorData = await response.json();
+        throw new Error(`${errorData.error || "unknown error"}`);
       }
-      if (data.message === "Logged In") {
-        console.log("submitted", data);
-        setMessage("Submitted");
+      const data = await response.json();
+      console.log("Success", data);
+      if (data.logged) {
+        setMessage("Log in successful");
       } else {
         setMessage(`${data.error}`);
       }
     } catch (error) {
-      setMessage("Unknown Error");
+      let errorMsg = "Unknown Error";
+      if (error && typeof error === "object" && "message" in error) {
+        errorMsg = (error as any).message;
+      }
+      setMessage(`${errorMsg}`);
     } finally {
       isLoading(false);
     }
@@ -47,9 +53,14 @@ function LoginForm() {
     <>
       <div data-theme="theme">
         <div className="bg bg-base-300 w-full max-w-1/3 h-full min-h-1/2 justify-items-center justify-self-center rounded-xl p-8">
+          {}
           <h1 className="text text-base-content text-xl p-8">Log In</h1>
           {message && <div className="text text-center">{message}</div>}
-          {loading && <div className="loading loading-dots loading-lg"></div>}
+          {loading && (
+            <div className="flex justify-center my-4">
+              <span className="loading loading-dots loading-lg"></span>
+            </div>
+          )}
           <form onSubmit={handleLogin} className="space-y-8">
             <div className="form-control">
               <label className="label">
